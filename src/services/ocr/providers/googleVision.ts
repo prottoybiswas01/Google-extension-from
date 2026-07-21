@@ -66,7 +66,7 @@ export class GoogleVisionOCRProvider implements IOCRProvider {
       if (onProgress) onProgress(100);
       return text.trim();
     } catch (error) {
-      console.error('[Google Vision OCR Error]:', error);
+      console.log('[Google Vision Provider Notice]:', error instanceof Error ? error.message : error);
       throw new Error(
         error instanceof Error ? error.message : 'Failed to process image with Google Vision OCR.'
       );

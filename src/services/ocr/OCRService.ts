@@ -10,7 +10,7 @@ export class OCRService {
     this.providers = {
       tesseract: new TesseractOCRProvider(),
       google_cloud: new GoogleVisionOCRProvider(),
-      custom_api: new TesseractOCRProvider(), // Custom fallback defaults to Tesseract
+      custom_api: new TesseractOCRProvider(),
     };
   }
 
@@ -32,14 +32,14 @@ export class OCRService {
     try {
       const rawText = await provider.extractText(image, apiKey, onProgress);
       if (!rawText || rawText.trim().length === 0) {
-        console.warn('[OCRService] Primary provider returned empty result. Retrying with Tesseract...');
+        console.log('[OCRService] Primary provider returned empty result. Retrying with Tesseract...');
         if (providerType !== 'tesseract') {
           return await this.providers.tesseract.extractText(image, apiKey, onProgress);
         }
       }
       return rawText;
     } catch (primaryError) {
-      console.warn(`[OCRService] Primary OCR provider failed (${providerType}). Falling back to Tesseract...`, primaryError);
+      console.log(`[OCRService] Primary OCR provider note (${providerType}). Falling back to Tesseract OCR engine.`);
       if (providerType !== 'tesseract') {
         return await this.providers.tesseract.extractText(image, apiKey, onProgress);
       }

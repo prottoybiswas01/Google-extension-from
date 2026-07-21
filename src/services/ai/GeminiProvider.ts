@@ -83,7 +83,7 @@ export class GeminiProvider implements IAIProvider {
       const parsed = JSON.parse(cleanedText) as Record<string, unknown>;
       return sanitizeExtractedFormData(parsed);
     } catch (e) {
-      console.error('[Gemini JSON Parsing Error]:', e, rawText);
+      console.log('[Gemini JSON Parsing Note]:', e);
       throw new Error('Failed to parse structured JSON from Gemini response.');
     }
   }
