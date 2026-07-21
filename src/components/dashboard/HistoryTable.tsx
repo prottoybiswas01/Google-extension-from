@@ -5,7 +5,6 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { historyService } from '../../services/history/HistoryService';
 import {
-  Search,
   Download,
   Trash2,
   Eye,

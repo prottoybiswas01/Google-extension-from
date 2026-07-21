@@ -4,6 +4,7 @@ import { cleanOcrText } from '../utils/textCleaner';
 import { fieldDetector } from './fieldDetector';
 import { ocrService } from './ocr/OCRService';
 import { aiService } from './ai/AIService';
+import { historyService } from './history/HistoryService';
 
 export class FormExtractionPipeline {
   /**
@@ -16,6 +17,8 @@ export class FormExtractionPipeline {
     onProgress: (state: PipelineProgressState) => void
   ): Promise<ExtractedFormData> {
     try {
+      const startTime = Date.now();
+
       // ----------------------------------------------------
       // Stage 1 & 2: Image Validation & Pre-processing
       // ----------------------------------------------------
@@ -106,6 +109,20 @@ ${JSON.stringify(detectionResult.detectedFields, null, 2)}
         settings.apiKey,
         compressionResult.dataUrl
       );
+
+      const processingTimeMs = Date.now() - startTime;
+
+      // Persist to IndexedDB history
+      try {
+        await historyService.recordExtraction(
+          compressionResult.dataUrl,
+          structuredResult,
+          'success',
+          processingTimeMs
+        );
+      } catch (err) {
+        console.warn('[Pipeline] Failed to save history to IndexedDB:', err);
+      }
 
       // ----------------------------------------------------
       // Stage 7: Structured JSON Output

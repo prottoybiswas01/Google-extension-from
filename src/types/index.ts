@@ -15,7 +15,14 @@ export interface ExtensionSettings {
   aiProvider: AIProvider;
   ocrProvider: OCRProvider;
   apiKey: string;
+  encryptedApiKey?: string;
+  theme?: ThemeMode;
 }
+
+/**
+ * Theme Mode for Light / Dark Mode Toggle
+ */
+export type ThemeMode = 'light' | 'dark';
 
 /**
  * Image Upload Status types for Popup UI
@@ -55,6 +62,40 @@ export interface ExtractedFormData {
   religion: string | null;
   nationality: string | null;
   remarks: string | null;
+}
+
+/**
+ * Institution Template Definition (Phase 6)
+ */
+export interface InstitutionTemplate {
+  id: string;
+  name: string;
+  headerKeywords: string[];
+  customMappings: Partial<Record<keyof ExtractedFormData, string>>;
+}
+
+/**
+ * Batch Processing Queue Item (Phase 6)
+ */
+export interface BatchItem {
+  id: string;
+  file: File;
+  name: string;
+  status: 'pending' | 'processing' | 'success' | 'failed';
+  progress: number;
+  result?: ExtractedFormData;
+  error?: string;
+}
+
+/**
+ * Notification Item Contract (Phase 6)
+ */
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  timestamp: number;
 }
 
 /**
@@ -99,10 +140,10 @@ export interface ReviewSummaryMetrics {
  */
 export interface FormHistoryRecord {
   id: string;
-  uploadedImage: string; // Data URL preview
+  uploadedImage: string;
   extractedJson: ExtractedFormData;
-  date: string; // ISO date string
-  timestamp: number; // Date.now() timestamp
+  date: string;
+  timestamp: number;
   institution: string;
   status: 'success' | 'failed';
   processingTimeMs: number;
@@ -148,6 +189,7 @@ export interface ExtensionBackupData {
   exportDate: string;
   settings: ExtensionSettings;
   history: FormHistoryRecord[];
+  templates?: InstitutionTemplate[];
 }
 
 /**
