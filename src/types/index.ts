@@ -59,7 +59,6 @@ export interface ExtractedFormData {
 
 /**
  * Confidence Levels for Review Screen
- * High = Green, Medium = Yellow, Low = Red
  */
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
@@ -77,7 +76,7 @@ export interface FieldReviewItem {
   value: string | null;
   originalValue: string | null;
   confidence: ConfidenceLevel;
-  confidenceScore: number; // 0 - 100
+  confidenceScore: number;
   status: FieldStatus;
   validationError?: string;
   required?: boolean;
@@ -93,6 +92,62 @@ export interface ReviewSummaryMetrics {
   editedCount: number;
   ignoredCount: number;
   overallConfidenceScore: number;
+}
+
+/**
+ * Form History Record stored in IndexedDB (Phase 5)
+ */
+export interface FormHistoryRecord {
+  id: string;
+  uploadedImage: string; // Data URL preview
+  extractedJson: ExtractedFormData;
+  date: string; // ISO date string
+  timestamp: number; // Date.now() timestamp
+  institution: string;
+  status: 'success' | 'failed';
+  processingTimeMs: number;
+}
+
+/**
+ * Dashboard Metrics Interface (Phase 5)
+ */
+export interface DashboardMetrics {
+  totalProcessed: number;
+  successfulForms: number;
+  failedForms: number;
+  avgProcessingTimeMs: number;
+  todayUsage: number;
+  weeklyUsage: number;
+  monthlyUsage: number;
+}
+
+/**
+ * Chart Data Point Interface
+ */
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
+/**
+ * Usage Statistics for Charts (Phase 5)
+ */
+export interface UsageStatistics {
+  daily: ChartDataPoint[];
+  weekly: ChartDataPoint[];
+  monthly: ChartDataPoint[];
+  successRatePercent: number;
+  failureRatePercent: number;
+}
+
+/**
+ * Full Extension Backup Package Interface
+ */
+export interface ExtensionBackupData {
+  version: string;
+  exportDate: string;
+  settings: ExtensionSettings;
+  history: FormHistoryRecord[];
 }
 
 /**

@@ -1,7 +1,7 @@
 import React from 'react';
 import { FieldReviewItem } from '../../types';
 import { validationEngine } from '../../services/review/ValidationEngine';
-import { Edit2, Trash2, EyeOff, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Trash2, EyeOff, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export interface FieldEditorProps {
   item: FieldReviewItem;
