@@ -10,6 +10,8 @@ import { useExtensionSettings } from '../hooks/useExtensionSettings';
 import { storageRepository } from '../services/storage/StorageRepository';
 import { dashboardService } from '../services/dashboard/DashboardService';
 import { statisticsService } from '../services/statistics/StatisticsService';
+import { templateEngine } from '../services/templates/TemplateEngine';
+import { cryptoService } from '../services/security/CryptoService';
 import {
   FormHistoryRecord,
   DashboardMetrics,
@@ -17,6 +19,7 @@ import {
   AIProvider,
   OCRProvider,
   ExtensionBackupData,
+  InstitutionTemplate,
 } from '../types';
 import {
   LayoutDashboard,
@@ -35,6 +38,7 @@ import {
   Trash2,
   ShieldCheck,
   RefreshCw,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const aiProviderOptions: SelectOption[] = [
@@ -58,16 +62,18 @@ export const Options: React.FC = () => {
     resetSettings,
   } = useExtensionSettings();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'statistics' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'statistics' | 'templates' | 'settings'>('dashboard');
   const [historyRecords, setHistoryRecords] = useState<FormHistoryRecord[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [stats, setStats] = useState<UsageStatistics | null>(null);
+  const [templates, setTemplates] = useState<InstitutionTemplate[]>([]);
 
   const [aiProvider, setAiProvider] = useState<AIProvider>(settings.aiProvider);
   const [ocrProvider, setOcrProvider] = useState<OCRProvider>(settings.ocrProvider);
   const [apiKey, setApiKey] = useState<string>(settings.apiKey);
   const [formSaved, setFormSaved] = useState<boolean>(false);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const templateInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
@@ -79,6 +85,8 @@ export const Options: React.FC = () => {
 
       const computedStats = statisticsService.generateStatistics(records);
       setStats(computedStats);
+
+      setTemplates(templateEngine.getTemplates());
     } catch (e) {
       console.error('[Dashboard] Error loading IndexedDB data:', e);
     }
@@ -91,12 +99,15 @@ export const Options: React.FC = () => {
   useEffect(() => {
     setAiProvider(settings.aiProvider);
     setOcrProvider(settings.ocrProvider);
-    setApiKey(settings.apiKey);
+    if (settings.apiKey) {
+      setApiKey(cryptoService.decryptApiKey(settings.apiKey));
+    }
   }, [settings]);
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newSettings = { aiProvider, ocrProvider, apiKey };
+    const encryptedKey = cryptoService.encryptApiKey(apiKey);
+    const newSettings = { aiProvider, ocrProvider, apiKey, encryptedApiKey: encryptedKey };
     const success = await updateSettings(newSettings);
     if (success) {
       await storageRepository.saveSettingsDB(newSettings);
@@ -107,6 +118,7 @@ export const Options: React.FC = () => {
 
   const handleBackupExport = async () => {
     const backupData = await storageRepository.exportBackup();
+    backupData.templates = templateEngine.getTemplates();
     const jsonStr = JSON.stringify(backupData, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -127,11 +139,34 @@ export const Options: React.FC = () => {
         const content = event.target?.result as string;
         const backupData = JSON.parse(content) as ExtensionBackupData;
         await storageRepository.importBackup(backupData);
+        if (backupData.templates) {
+          for (const t of backupData.templates) {
+            templateEngine.addTemplate(t);
+          }
+        }
         alert('Backup data restored successfully!');
         await loadData();
       } catch (err) {
         console.error('Backup restore error:', err);
         alert('Failed to restore backup file. Please ensure it is a valid backup JSON.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleTemplateImportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        templateEngine.importTemplateJson(content);
+        setTemplates([...templateEngine.getTemplates()]);
+        alert('Institution template imported successfully!');
+      } catch (err) {
+        alert('Invalid template JSON file format.');
       }
     };
     reader.readAsText(file);
@@ -198,6 +233,18 @@ export const Options: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab('templates')}
+              className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
+                activeTab === 'templates'
+                  ? 'border-brand-600 text-brand-600 bg-brand-50/50'
+                  : 'border-transparent text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Institution Templates ({templates.length})
+            </button>
+
+            <button
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
                 activeTab === 'settings'
@@ -214,7 +261,6 @@ export const Options: React.FC = () => {
         {/* TAB 1: OVERVIEW DASHBOARD */}
         {activeTab === 'dashboard' && metrics && (
           <div className="space-y-6">
-            {/* Top Metric Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card variant="default" className="p-4 flex items-center justify-between">
                 <div>
@@ -257,7 +303,6 @@ export const Options: React.FC = () => {
               </Card>
             </div>
 
-            {/* Usage Period Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card variant="default" className="p-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase">
@@ -284,7 +329,6 @@ export const Options: React.FC = () => {
               </Card>
             </div>
 
-            {/* Recent History Table View */}
             <Card variant="default" className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-800 uppercase">Recent History Records</h3>
@@ -335,7 +379,81 @@ export const Options: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4: SETTINGS & BACKUP */}
+        {/* TAB 4: INSTITUTION TEMPLATES */}
+        {activeTab === 'templates' && (
+          <div className="space-y-6">
+            <Card variant="default" className="p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-brand-600" />
+                  Institution Templates & Custom Mappings
+                </h2>
+
+                <input
+                  type="file"
+                  ref={templateInputRef}
+                  accept=".json"
+                  onChange={handleTemplateImportSelect}
+                  className="hidden"
+                />
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => templateInputRef.current?.click()}
+                    leftIcon={<Upload className="w-3.5 h-3.5" />}
+                  >
+                    Import Template
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const sample = templates[0] || { id: 'sample', name: 'Sample Template', headerKeywords: ['ttc'], customMappings: {} };
+                      const jsonStr = templateEngine.exportTemplateJson(sample);
+                      const blob = new Blob([jsonStr], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `institution_template_${sample.id}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    leftIcon={<Download className="w-3.5 h-3.5" />}
+                  >
+                    Export Template
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {templates.map((tpl) => (
+                  <Card key={tpl.id} variant="bordered" className="p-4 bg-white space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-800">{tpl.name}</h3>
+                      <span className="text-[10px] font-mono bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200">
+                        {tpl.id}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <p>
+                        <strong>Header Keywords:</strong> {tpl.headerKeywords.join(', ')}
+                      </p>
+                      <p>
+                        <strong>Custom Mappings:</strong> {Object.keys(tpl.customMappings).length} fields configured
+                      </p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* TAB 5: SETTINGS & BACKUP */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
             <form onSubmit={handleSettingsSubmit}>
@@ -360,11 +478,12 @@ export const Options: React.FC = () => {
                 />
 
                 <Input
-                  label="API Key"
+                  label="API Key (Encrypted)"
                   isPassword={true}
                   placeholder="Enter Provider API key..."
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
+                  helperText="Your API Key is encrypted using CryptoService before persistence."
                 />
 
                 <div className="flex justify-end pt-2">
