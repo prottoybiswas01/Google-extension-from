@@ -5,6 +5,7 @@ import { fieldDetector } from './fieldDetector';
 import { ocrService } from './ocr/OCRService';
 import { aiService } from './ai/AIService';
 import { historyService } from './history/HistoryService';
+import { pdfService } from './pdf/PDFService';
 
 export class FormExtractionPipeline {
   /**
@@ -25,15 +26,27 @@ export class FormExtractionPipeline {
       onProgress({
         step: 'preprocessing',
         progressPercent: 15,
-        statusMessage: 'Stage 2/7: Pre-processing image & scaling...',
+        statusMessage: 'Stage 2/7: Pre-processing document & scaling...',
       });
 
       const validation = validateImageFile(imageFile);
       if (!validation.valid) {
-        throw new Error(validation.error || 'Invalid image file.');
+        throw new Error(validation.error || 'Invalid document file.');
       }
 
-      const compressionResult = await compressImage(imageFile, 1600, 0.85);
+      let processingBlob: Blob = imageFile;
+      let pdfExtractedText = '';
+
+      // If document is PDF, convert to image canvas first
+      if (pdfService.isPdfFile(imageFile)) {
+        const pdfRes = await pdfService.convertPdfToImages(imageFile);
+        if (pdfRes.imageBlobs[0]) {
+          processingBlob = pdfRes.imageBlobs[0];
+        }
+        pdfExtractedText = pdfRes.extractedText;
+      }
+
+      const compressionResult = await compressImage(processingBlob, 1600, 0.85);
 
       // ----------------------------------------------------
       // Stage 3: OCR Execution
@@ -44,7 +57,7 @@ export class FormExtractionPipeline {
         statusMessage: `Stage 3/7: Running OCR text recognition (${settings.ocrProvider})...`,
       });
 
-      const rawOcrText = await ocrService.extractText(
+      let rawOcrText = await ocrService.extractText(
         settings.ocrProvider,
         compressionResult.compressedBlob,
         settings.apiKey,
@@ -57,6 +70,10 @@ export class FormExtractionPipeline {
           });
         }
       );
+
+      if (pdfExtractedText && pdfExtractedText.trim().length > 0) {
+        rawOcrText = `${pdfExtractedText}\n${rawOcrText}`;
+      }
 
       // ----------------------------------------------------
       // Stage 4: Text Cleaning
