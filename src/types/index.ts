@@ -38,6 +38,7 @@ export interface UploadedFileData {
   type: string;
   previewUrl: string;
   blob: Blob;
+  rawFile?: File;
 }
 
 /**

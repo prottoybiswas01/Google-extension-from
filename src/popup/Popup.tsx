@@ -67,6 +67,7 @@ export const Popup: React.FC = () => {
         type: 'application/pdf',
         previewUrl,
         blob: mainBlob,
+        rawFile: file,
       });
       setStatus('ready');
       setExtractedData(null);
@@ -140,8 +141,9 @@ export const Popup: React.FC = () => {
 
     setStatus('uploading');
     try {
+      const targetFileBlob = uploadedFile.rawFile || uploadedFile.blob;
       const result = await formExtractionPipeline.executePipeline(
-        uploadedFile.blob,
+        targetFileBlob,
         settings,
         (progress) => {
           setPipelineState(progress);
