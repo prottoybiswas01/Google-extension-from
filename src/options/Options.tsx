@@ -7,7 +7,7 @@ import { Select, SelectOption } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useExtensionSettings } from '../hooks/useExtensionSettings';
 import { AIProvider, OCRProvider } from '../types';
-import { Save, Key, Cpu, Scan, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Save, Key, Cpu, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 
 const aiProviderOptions: SelectOption[] = [
   { value: 'gemini', label: 'Google Gemini (Recommended)', description: 'Fast Vision & Multimodal' },

@@ -164,7 +164,10 @@ export const Popup: React.FC = () => {
               <h2 className="text-xs font-semibold text-slate-700 tracking-wide uppercase">
                 System Status
               </h2>
-              <StatusBadge status="ready" label="Phase 1 Ready" />
+              <StatusBadge
+                status={status === 'ready' ? 'ready' : 'standby'}
+                label={status === 'ready' ? 'Image Loaded' : 'Phase 1 Ready'}
+              />
             </div>
             <div className="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-2">
               <div className="flex justify-between items-center">
