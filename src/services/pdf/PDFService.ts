@@ -1,5 +1,5 @@
 /**
- * PDF Processing & Page Canvas Extraction Service
+ * PDF Processing & Dynamic Text Extraction Service
  */
 
 export class PDFService {
@@ -14,9 +14,12 @@ export class PDFService {
   }
 
   /**
-   * Converts PDF document blob into a high-resolution image Canvas and Blob.
+   * Dynamically extracts text streams and renders page canvas from the uploaded PDF document.
    */
-  async convertPdfToImages(_pdfBlob: Blob): Promise<{ imageBlobs: Blob[]; dataUrls: string[] }> {
+  async convertPdfToImages(pdfBlob: Blob): Promise<{ imageBlobs: Blob[]; dataUrls: string[]; extractedText: string }> {
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const extractedText = this.extractTextFromPdfArrayBuffer(arrayBuffer);
+
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       canvas.width = 1200;
@@ -29,45 +32,22 @@ export class PDFService {
 
         // Header Banner
         ctx.fillStyle = '#1e3a8a';
-        ctx.fillRect(0, 0, 1200, 120);
+        ctx.fillRect(0, 0, 1200, 100);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.fillText('APPLICATION FORM DOCUMENT', 60, 70);
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText('DOCUMENT PREVIEW', 60, 60);
 
-        // Form Fields Text Canvas Mock Rendering for PDF
+        // Render extracted text onto canvas preview
         ctx.fillStyle = '#1e293b';
-        ctx.font = '22px sans-serif';
+        ctx.font = '18px monospace';
 
-        const formFields = [
-          'Student Name: PROTTOY KUMAR BISWAS',
-          'Father Name: KUMAR BISWAS',
-          'Mother Name: ANITA BISWAS',
-          'Phone: 01712345678',
-          'Email: prottoy@example.com',
-          'Date of Birth: 1998-10-15',
-          'Gender: Male',
-          'NID: 19981234567890123',
-          'Present Address: Dhaka, Bangladesh',
-          'Permanent Address: Rajshahi, Bangladesh',
-          'Course: Diploma in Engineering',
-          'Trade: Computer Technology',
-          'Education: HSC Passed',
-          'Blood Group: A+',
-          'Religion: Hinduism',
-          'Nationality: Bangladeshi',
-          'Remarks: Certificate Verified',
-        ];
+        const lines = extractedText.split('\n').filter((l) => l.trim().length > 0);
+        let startY = 160;
 
-        let startY = 200;
-        for (const line of formFields) {
-          ctx.fillText(line, 80, startY);
-          ctx.strokeStyle = '#e2e8f0';
-          ctx.beginPath();
-          ctx.moveTo(80, startY + 12);
-          ctx.lineTo(1120, startY + 12);
-          ctx.stroke();
-          startY += 75;
+        for (const line of lines.slice(0, 20)) {
+          ctx.fillText(line.substring(0, 80), 60, startY);
+          startY += 40;
         }
       }
 
@@ -79,12 +59,55 @@ export class PDFService {
           resolve({
             imageBlobs: [finalBlob],
             dataUrls: [dataUrl],
+            extractedText,
           });
         },
         'image/jpeg',
         0.9
       );
     });
+  }
+
+  /**
+   * Reads raw PDF ArrayBuffer and extracts text characters from PDF stream blocks.
+   */
+  private extractTextFromPdfArrayBuffer(buffer: ArrayBuffer): string {
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const rawString = decoder.decode(buffer);
+
+      const extractedWords: string[] = [];
+
+      // Extract text inside PDF parenthesis operators: (text)
+      const parenthesisRegex = /\(([^()]{2,100})\)/g;
+      let match: RegExpExecArray | null;
+
+      while ((match = parenthesisRegex.exec(rawString)) !== null) {
+        const textStr = match[1]?.trim();
+        if (
+          textStr &&
+          textStr.length > 1 &&
+          !textStr.startsWith('/') &&
+          !textStr.includes('Adobe') &&
+          !textStr.includes('Font') &&
+          !textStr.includes('Identity')
+        ) {
+          // Clean non-printable bytes
+          const cleaned = textStr.replace(/[^\x20-\x7E\u0980-\u09FF]/g, '');
+          if (cleaned.length > 1) {
+            extractedWords.push(cleaned);
+          }
+        }
+      }
+
+      if (extractedWords.length > 0) {
+        return extractedWords.join('\n');
+      }
+    } catch (e) {
+      console.warn('[PDFService] Stream extraction warning:', e);
+    }
+
+    return 'PDF Application Form Document';
   }
 }
 
