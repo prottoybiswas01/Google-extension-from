@@ -40,14 +40,14 @@ export class PDFService {
 
         // Render extracted text onto canvas preview
         ctx.fillStyle = '#1e293b';
-        ctx.font = '18px monospace';
+        ctx.font = '16px monospace';
 
         const lines = extractedText.split('\n').filter((l) => l.trim().length > 0);
-        let startY = 160;
+        let startY = 150;
 
-        for (const line of lines.slice(0, 20)) {
-          ctx.fillText(line.substring(0, 80), 60, startY);
-          startY += 40;
+        for (const line of lines.slice(0, 30)) {
+          ctx.fillText(line.substring(0, 90), 60, startY);
+          startY += 35;
         }
       }
 
@@ -73,35 +73,46 @@ export class PDFService {
    */
   private extractTextFromPdfArrayBuffer(buffer: ArrayBuffer): string {
     try {
-      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const decoder = new TextDecoder('latin1', { fatal: false });
       const rawString = decoder.decode(buffer);
 
-      const extractedWords: string[] = [];
+      const extractedLines: string[] = [];
 
       // Extract text inside PDF parenthesis operators: (text)
-      const parenthesisRegex = /\(([^()]{2,100})\)/g;
+      const parenthesisRegex = /\(([^()]{2,150})\)/g;
       let match: RegExpExecArray | null;
+
+      let currentLineWords: string[] = [];
 
       while ((match = parenthesisRegex.exec(rawString)) !== null) {
         const textStr = match[1]?.trim();
         if (
           textStr &&
-          textStr.length > 1 &&
+          textStr.length > 0 &&
           !textStr.startsWith('/') &&
           !textStr.includes('Adobe') &&
-          !textStr.includes('Font') &&
-          !textStr.includes('Identity')
+          !textStr.includes('FontName') &&
+          !textStr.includes('MediaBox') &&
+          !textStr.includes('ProcSet')
         ) {
-          // Clean non-printable bytes
-          const cleaned = textStr.replace(/[^\x20-\x7E\u0980-\u09FF]/g, '');
-          if (cleaned.length > 1) {
-            extractedWords.push(cleaned);
+          // Clean non-printable control bytes while preserving ASCII + UTF8
+          const cleaned = textStr.replace(/[\x00-\x1F\x7F-\x9F]/g, ' ').trim();
+          if (cleaned.length > 0) {
+            currentLineWords.push(cleaned);
+            if (currentLineWords.length >= 3 || cleaned.includes('\n')) {
+              extractedLines.push(currentLineWords.join(' '));
+              currentLineWords = [];
+            }
           }
         }
       }
 
-      if (extractedWords.length > 0) {
-        return extractedWords.join('\n');
+      if (currentLineWords.length > 0) {
+        extractedLines.push(currentLineWords.join(' '));
+      }
+
+      if (extractedLines.length > 0) {
+        return extractedLines.join('\n');
       }
     } catch (e) {
       console.warn('[PDFService] Stream extraction warning:', e);
