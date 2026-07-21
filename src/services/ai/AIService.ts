@@ -49,32 +49,34 @@ export class AIService {
   }
 
   /**
-   * Local Offline AI Structured Extractor
+   * Dynamic Local Offline AI Extractor
+   * Maps fields strictly from detected OCR text rules. Unknown or unreadable fields return null.
    */
   private offlineAiExtraction(ocrText: string): ExtractedFormData {
     const detected = fieldDetector.detectFields(ocrText);
+    const d = detected.detectedFields;
 
-    const fallback: Record<string, unknown> = {
-      student_name: detected.detectedFields.student_name || 'Prottoy Kumar Biswas',
-      father_name: detected.detectedFields.father_name || 'Kumar Biswas',
-      mother_name: detected.detectedFields.mother_name || 'Anita Biswas',
-      phone: detected.detectedFields.phone || '01712345678',
-      email: detected.detectedFields.email || 'prottoy@example.com',
-      date_of_birth: detected.detectedFields.date_of_birth || '1998-10-15',
-      gender: detected.detectedFields.gender || 'Male',
-      nid: detected.detectedFields.nid || '19981234567890123',
-      present_address: detected.detectedFields.present_address || 'Dhaka, Bangladesh',
-      permanent_address: detected.detectedFields.permanent_address || 'Rajshahi, Bangladesh',
-      course: detected.detectedFields.course || 'Diploma in Engineering',
-      trade: detected.detectedFields.trade || 'Computer Technology',
-      education: detected.detectedFields.education || 'HSC Passed',
-      blood_group: detected.detectedFields.blood_group || 'A+',
-      religion: detected.detectedFields.religion || 'Hinduism',
-      nationality: detected.detectedFields.nationality || 'Bangladeshi',
-      remarks: detected.detectedFields.remarks || 'Document Verified',
+    const dynamicData: Record<string, unknown> = {
+      student_name: d.student_name || null,
+      father_name: d.father_name || null,
+      mother_name: d.mother_name || null,
+      phone: d.phone || null,
+      email: d.email || null,
+      date_of_birth: d.date_of_birth || null,
+      gender: d.gender || null,
+      nid: d.nid || null,
+      present_address: d.present_address || null,
+      permanent_address: d.permanent_address || null,
+      course: d.course || null,
+      trade: d.trade || null,
+      education: d.education || null,
+      blood_group: d.blood_group || null,
+      religion: d.religion || null,
+      nationality: d.nationality || null,
+      remarks: d.remarks || null,
     };
 
-    return sanitizeExtractedFormData(fallback);
+    return sanitizeExtractedFormData(dynamicData);
   }
 }
 
