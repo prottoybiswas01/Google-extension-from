@@ -15,7 +15,6 @@ export default defineManifest({
   },
   background: {
     service_worker: 'src/background/index.ts',
-    type: 'module',
   },
   content_scripts: [
     {

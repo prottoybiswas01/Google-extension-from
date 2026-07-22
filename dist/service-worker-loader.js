@@ -1,1 +1,1 @@
-import './assets/index.ts-Bl4Kfeml.js';
+importScripts('./assets/index.ts-Bl4Kfeml.js');

@@ -12,8 +12,7 @@
     "open_in_tab": true
   },
   "background": {
-    "service_worker": "service-worker-loader.js",
-    "type": "module"
+    "service_worker": "service-worker-loader.js"
   },
   "content_scripts": [
     {
