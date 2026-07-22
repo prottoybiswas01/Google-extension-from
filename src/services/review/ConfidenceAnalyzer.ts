@@ -7,23 +7,51 @@ import {
 import { validationEngine } from './ValidationEngine';
 
 const FIELD_LABEL_MAP: Record<keyof ExtractedFormData, { label: string; required?: boolean }> = {
-  student_name: { label: 'Student Name', required: true },
-  father_name: { label: "Father's Name" },
-  mother_name: { label: "Mother's Name" },
-  phone: { label: 'Phone Number', required: true },
+  student_name: { label: 'Student / Full Name (English)', required: true },
+  father_name: { label: "Father's Name (English)" },
+  mother_name: { label: "Mother's Name (English)" },
+  phone: { label: 'Contact Number / Phone', required: true },
   email: { label: 'Email Address' },
   date_of_birth: { label: 'Date of Birth' },
-  gender: { label: 'Gender' },
-  nid: { label: 'NID / Identity Number' },
+  gender: { label: 'Gender / Sex' },
+  nid: { label: 'NID / Birth Cert / Passport' },
   present_address: { label: 'Present Address' },
   permanent_address: { label: 'Permanent Address' },
-  course: { label: 'Course' },
+  course: { label: 'Course / Trade' },
   trade: { label: 'Trade / Technology' },
-  education: { label: 'Educational Qualification' },
+  education: { label: 'Highest Educational Level' },
   blood_group: { label: 'Blood Group' },
   religion: { label: 'Religion' },
   nationality: { label: 'Nationality' },
   remarks: { label: 'Remarks / Notes' },
+
+  username: { label: 'Username' },
+  name_bangla: { label: 'Full Name (Bangla)' },
+  emergency_contact: { label: 'Emergency Contact No' },
+  password: { label: 'Password' },
+  father_occupation: { label: "Father's Occupation" },
+  mother_occupation: { label: "Mother's Occupation" },
+  pwd: { label: 'Person with Disability (PWD)' },
+  marital_status: { label: 'Marital Status' },
+  permanent_division: { label: 'Permanent Division' },
+  permanent_district: { label: 'Permanent District' },
+  permanent_upazila: { label: 'Permanent Upazila' },
+  permanent_post_office: { label: 'Permanent Post Office' },
+  rural_urban: { label: 'Rural or Urban Area' },
+  present_division: { label: 'Present Division' },
+  present_district: { label: 'Present District' },
+  present_upazila: { label: 'Present Upazila' },
+  present_post_office: { label: 'Present Post Office' },
+  board_university: { label: 'Board / University' },
+  institute_name: { label: 'Education Institute Name' },
+  passing_year: { label: 'Passing Year' },
+  tvet_certificate: { label: 'TVET Certificate' },
+  ethnic_minority: { label: 'Ethnic Minority' },
+  company_name: { label: 'Company Name' },
+  designation: { label: 'Designation' },
+  skill_training_past: { label: 'Received Past Skill Training' },
+  employment_status: { label: 'Employment Status' },
+  monthly_income: { label: 'Monthly Income (BDT)' },
 };
 
 export class ConfidenceAnalyzer {
@@ -38,7 +66,7 @@ export class ConfidenceAnalyzer {
 
     return keys.map((key) => {
       const config = FIELD_LABEL_MAP[key];
-      const val = data[key];
+      const val = data[key] ?? null;
       const hintVal = detectedFieldsHint?.[key];
 
       let confidenceScore = 90;

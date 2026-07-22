@@ -168,15 +168,58 @@ export const Popup: React.FC = () => {
     }
   };
 
-  const handleFillFormTrigger = (reviewedData: ExtractedFormData) => {
-    notificationManager.notify('Auto Fill Triggered', 'Form data approved and ready for web page filling.', 'success');
-    alert(
-      `Phase 6 Approved!\nReviewed Data ready for Web Form Filling:\n\n${JSON.stringify(
-        reviewedData,
-        null,
-        2
-      )}`
-    );
+  const handleFillFormTrigger = async (reviewedData: ExtractedFormData) => {
+    notificationManager.notify('Auto Fill Triggered', 'Sending approved form data to target web tab...', 'info');
+
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (!activeTab || !activeTab.id) {
+          notificationManager.notify('Auto Fill Error', 'No active browser tab found.', 'error');
+          return;
+        }
+
+        chrome.tabs.sendMessage(
+          activeTab.id,
+          {
+            action: 'FILL_WEB_FORM',
+            payload: reviewedData,
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn('[Popup] Message error:', chrome.runtime.lastError.message);
+              notificationManager.notify(
+                'Auto Fill Error',
+                'Could not reach target page content script. Ensure you are on a normal web page.',
+                'warning'
+              );
+              return;
+            }
+
+            if (response && response.success) {
+              const filledCount = response.data?.totalFieldsFilled || 0;
+              notificationManager.notify(
+                'Form Auto-Filled!',
+                `Successfully filled ${filledCount} field(s) on the web page.`,
+                'success'
+              );
+            } else {
+              notificationManager.notify(
+                'Auto Fill Note',
+                response?.error || 'Form filling completed with no matching elements.',
+                'warning'
+              );
+            }
+          }
+        );
+      } catch (err) {
+        console.error('[Popup] Failed to send message to content script:', err);
+        notificationManager.notify('Auto Fill Error', 'Failed to trigger form filler on active tab.', 'error');
+      }
+    } else {
+      alert(`Preview Mode (No Extension API Context):\nReviewed Data ready for Auto-Fill:\n\n${JSON.stringify(reviewedData, null, 2)}`);
+    }
   };
 
   const formatFileSize = (bytes: number): string => {

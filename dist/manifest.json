@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-To5amdCP.js"
+        "assets/index.ts-BeL4b5lR.js"
       ],
       "matches": [
         "<all_urls>"
@@ -35,7 +35,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-To5amdCP.js"
+        "assets/index.ts-BeL4b5lR.js"
       ],
       "use_dynamic_url": false
     }

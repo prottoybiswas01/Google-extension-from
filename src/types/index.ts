@@ -63,6 +63,35 @@ export interface ExtractedFormData {
   religion: string | null;
   nationality: string | null;
   remarks: string | null;
+
+  // Extended Registration Form Fields
+  username?: string | null;
+  name_bangla?: string | null;
+  emergency_contact?: string | null;
+  password?: string | null;
+  father_occupation?: string | null;
+  mother_occupation?: string | null;
+  pwd?: string | null;
+  marital_status?: string | null;
+  permanent_division?: string | null;
+  permanent_district?: string | null;
+  permanent_upazila?: string | null;
+  permanent_post_office?: string | null;
+  rural_urban?: string | null;
+  present_division?: string | null;
+  present_district?: string | null;
+  present_upazila?: string | null;
+  present_post_office?: string | null;
+  board_university?: string | null;
+  institute_name?: string | null;
+  passing_year?: string | null;
+  tvet_certificate?: string | null;
+  ethnic_minority?: string | null;
+  company_name?: string | null;
+  designation?: string | null;
+  skill_training_past?: string | null;
+  employment_status?: string | null;
+  monthly_income?: string | null;
 }
 
 /**
@@ -221,9 +250,9 @@ export interface PipelineProgressState {
 }
 
 /**
- * Inter-process message actions between Popup/Options and Service Worker
+ * Inter-process message actions between Popup/Options, Content Script and Service Worker
  */
-export type MessageAction = 'GET_SETTINGS' | 'SAVE_SETTINGS' | 'PING';
+export type MessageAction = 'GET_SETTINGS' | 'SAVE_SETTINGS' | 'PING' | 'FILL_WEB_FORM';
 
 /**
  * Generic extension message structure
