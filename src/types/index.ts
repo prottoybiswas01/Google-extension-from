@@ -1,7 +1,7 @@
 /**
  * Supported AI Providers for form processing
  */
-export type AIProvider = 'openai' | 'gemini' | 'claude';
+export type AIProvider = 'local_python' | 'openai' | 'gemini' | 'claude';
 
 /**
  * Supported OCR Engine Providers

@@ -2,6 +2,7 @@ import { AIProvider, ExtractedFormData } from '../../types';
 import { IAIProvider } from './types';
 import { GeminiProvider, sanitizeExtractedFormData } from './GeminiProvider';
 import { OpenAIProvider } from './OpenAIProvider';
+import { localPythonProvider } from './LocalPythonProvider';
 import { fieldDetector } from '../fieldDetector';
 
 export class AIService {
@@ -9,6 +10,7 @@ export class AIService {
 
   constructor() {
     this.providers = {
+      local_python: localPythonProvider,
       gemini: new GeminiProvider(),
       openai: new OpenAIProvider(),
       claude: new GeminiProvider(),
@@ -17,7 +19,7 @@ export class AIService {
 
   /**
    * Processes OCR text and optional image using the selected AI Provider.
-   * If no API Key is set in Settings, gracefully falls back to local offline AI parsing.
+   * If local_python is selected or no API key is provided, uses local free extraction engines.
    */
   async extractStructuredData(
     providerType: AIProvider,
@@ -25,15 +27,26 @@ export class AIService {
     apiKey: string,
     imageDataUrl?: string
   ): Promise<ExtractedFormData> {
+    // If provider is local_python, execute local python provider directly
+    if (providerType === 'local_python' || !providerType) {
+      console.log('[AIService] Executing extraction via Local Python Engine.');
+      try {
+        return await localPythonProvider.extractData(ocrText, '', imageDataUrl);
+      } catch (localPyErr) {
+        console.warn('[AIService] Local Python Engine error. Falling back to built-in offline field detector:', localPyErr);
+        return this.offlineAiExtraction(ocrText);
+      }
+    }
+
     const selectedProvider = this.providers[providerType];
-    const defaultProvider = this.providers.gemini;
+    const defaultProvider = localPythonProvider;
     const provider = selectedProvider || defaultProvider;
 
     if (!provider) {
       throw new Error('AI Provider initialization failed.');
     }
 
-    // If API Key is provided, execute live cloud provider request
+    // If API Key is provided for cloud provider, execute cloud provider request
     if (apiKey && apiKey.trim().length > 0) {
       console.log(`[AIService] Executing extraction via ${provider.name} with API Key.`);
       try {
@@ -43,7 +56,7 @@ export class AIService {
       }
     }
 
-    // Fallback Local Offline AI Extractor (When no API key is configured or cloud request fails)
+    // Fallback Local Offline AI Extractor
     console.log('[AIService] Using local offline AI extractor (No API Key required).');
     return this.offlineAiExtraction(ocrText);
   }

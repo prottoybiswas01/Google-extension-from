@@ -33,6 +33,8 @@ import {
   Moon,
 } from 'lucide-react';
 
+import { localPythonProvider } from '../services/ai/LocalPythonProvider';
+
 export const Popup: React.FC = () => {
   const { settings } = useExtensionSettings();
   const [uploadedFile, setUploadedFile] = useState<UploadedFileData | null>(null);
@@ -40,6 +42,7 @@ export const Popup: React.FC = () => {
   const [viewMode, setViewMode] = useState<'upload' | 'review'>('upload');
   const [theme, setTheme] = useState<ThemeMode>(themeManager.getTheme());
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [isPythonConnected, setIsPythonConnected] = useState<boolean | null>(null);
 
   const [pipelineState, setPipelineState] = useState<PipelineProgressState>({
     step: 'idle',
@@ -48,6 +51,14 @@ export const Popup: React.FC = () => {
   });
   const [extractedData, setExtractedData] = useState<ExtractedFormData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    async function checkPy() {
+      const active = await localPythonProvider.checkHealth();
+      setIsPythonConnected(active);
+    }
+    void checkPy();
+  }, []);
 
   const toggleTheme = () => {
     const nextTheme = themeManager.toggleTheme();
@@ -254,7 +265,7 @@ export const Popup: React.FC = () => {
       <div className="space-y-3">
         {/* Top Header with Theme Switcher */}
         <div className="flex items-start justify-between">
-          <Header title="TTC Form Auto Fill" subtitle="Enterprise Form Extraction" />
+          <Header title="TTC Form Auto Fill" subtitle="Free Offline Python Extraction Engine" />
           <button
             onClick={toggleTheme}
             className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 transition-colors"
@@ -262,6 +273,21 @@ export const Popup: React.FC = () => {
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
+        </div>
+
+        {/* Python Server Status Banner */}
+        <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-xs">
+          <div className="flex items-center gap-2">
+            <span className={`w-2.5 h-2.5 rounded-full ${isPythonConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              {isPythonConnected
+                ? 'Python Local Server: Connected (http://127.0.0.1:5000)'
+                : 'Python Engine: Standard Offline Extraction Active'}
+            </span>
+          </div>
+          {!isPythonConnected && (
+            <span className="text-[10px] text-amber-600 font-mono">Run run_server.bat</span>
+          )}
         </div>
 
         {/* Upload Image / PDF Drag & Drop Section */}

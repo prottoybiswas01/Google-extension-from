@@ -1,7 +1,7 @@
 import { ExtensionSettings } from '../types';
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  aiProvider: 'gemini',
+  aiProvider: 'local_python',
   ocrProvider: 'tesseract',
   apiKey: '',
 };

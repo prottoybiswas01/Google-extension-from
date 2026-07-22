@@ -42,7 +42,8 @@ import {
 } from 'lucide-react';
 
 const aiProviderOptions: SelectOption[] = [
-  { value: 'gemini', label: 'Google Gemini (Recommended)', description: 'Fast Vision & Multimodal' },
+  { value: 'local_python', label: 'Local Python Engine (Free & Offline)', description: 'No API Key required. Runs on http://127.0.0.1:5000' },
+  { value: 'gemini', label: 'Google Gemini', description: 'Fast Vision & Multimodal' },
   { value: 'openai', label: 'OpenAI GPT-4o', description: 'High Precision OCR & Parsing' },
   { value: 'claude', label: 'Anthropic Claude 3.5 Sonnet', description: 'Advanced Document Analysis' },
 ];
