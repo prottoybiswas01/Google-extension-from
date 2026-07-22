@@ -340,6 +340,22 @@ export class FieldDetector {
             }
           }
           if (detectedFields[item.key]) break;
+
+          // Proximity heuristic: If line i matches label keyword, check line i+1 for value
+          const labelKeywords = [item.key.replace(/_/g, ' ')];
+          const isLabelLine = labelKeywords.some((kw) => line.toLowerCase().includes(kw));
+          if (isLabelLine && i + 1 < lines.length) {
+            const nextLine = (lines[i + 1] || '').trim();
+            if (
+              nextLine.length > 0 &&
+              !nextLine.includes(':') &&
+              !/^(login|basic|permanent|present|address|skill|register|submit)/i.test(nextLine)
+            ) {
+              detectedFields[item.key] = nextLine;
+              confidenceMap[item.key] = 0.75;
+              break;
+            }
+          }
         }
       }
     }
