@@ -26,14 +26,11 @@ import {
   CheckCircle2,
   X,
   RefreshCw,
-  Info,
   CheckSquare,
   FileType,
   Sun,
   Moon,
 } from 'lucide-react';
-
-import { localPythonProvider } from '../services/ai/LocalPythonProvider';
 
 export const Popup: React.FC = () => {
   const { settings } = useExtensionSettings();
@@ -42,7 +39,6 @@ export const Popup: React.FC = () => {
   const [viewMode, setViewMode] = useState<'upload' | 'review'>('upload');
   const [theme, setTheme] = useState<ThemeMode>(themeManager.getTheme());
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
-  const [isPythonConnected, setIsPythonConnected] = useState<boolean | null>(null);
 
   const [pipelineState, setPipelineState] = useState<PipelineProgressState>({
     step: 'idle',
@@ -51,14 +47,6 @@ export const Popup: React.FC = () => {
   });
   const [extractedData, setExtractedData] = useState<ExtractedFormData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    async function checkPy() {
-      const active = await localPythonProvider.checkHealth();
-      setIsPythonConnected(active);
-    }
-    void checkPy();
-  }, []);
 
   const toggleTheme = () => {
     const nextTheme = themeManager.toggleTheme();
@@ -265,7 +253,7 @@ export const Popup: React.FC = () => {
       <div className="space-y-3">
         {/* Top Header with Theme Switcher */}
         <div className="flex items-start justify-between">
-          <Header title="TTC Form Auto Fill" subtitle="Free Offline Python Extraction Engine" />
+          <Header title="TTC Form Auto Fill" subtitle="100% Offline Browser WASM Engine" />
           <button
             onClick={toggleTheme}
             className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 transition-colors"
@@ -275,19 +263,14 @@ export const Popup: React.FC = () => {
           </button>
         </div>
 
-        {/* Python Server Status Banner */}
+        {/* Engine Status Banner */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-xs">
           <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${isPythonConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-semibold text-slate-700 dark:text-slate-200">
-              {isPythonConnected
-                ? 'Python Local Server: Connected (http://127.0.0.1:5000)'
-                : 'Python Engine: Standard Offline Extraction Active'}
+              Local Browser Engine Active (No API Key Required)
             </span>
           </div>
-          {!isPythonConnected && (
-            <span className="text-[10px] text-amber-600 font-mono">Run run_server.bat</span>
-          )}
         </div>
 
         {/* Upload Image / PDF Drag & Drop Section */}
@@ -415,12 +398,6 @@ export const Popup: React.FC = () => {
               Open Data Review Screen
             </Button>
           )}
-
-          {!settings.apiKey && (
-            <p className="text-[11px] text-amber-600 text-center flex items-center justify-center gap-1">
-              <Info className="w-3.5 h-3.5" /> Configure your API key in Settings for full AI vision parsing
-            </p>
-          )}
         </div>
 
         {/* Pipeline Progress Indicator */}
@@ -451,20 +428,20 @@ export const Popup: React.FC = () => {
               </h2>
               <StatusBadge
                 status={status === 'error' ? 'warning' : status === 'ready' ? 'ready' : 'standby'}
-                label={status === 'error' ? 'Error' : status === 'ready' ? 'Ready for Extraction' : 'Phase 6 Active'}
+                label={status === 'error' ? 'Error' : status === 'ready' ? 'Ready for Extraction' : 'Local WASM Active'}
               />
             </div>
             <div className="space-y-1 text-xs text-slate-600 border-t border-slate-100 pt-2">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">OCR Engine:</span>
-                <span className="font-medium text-slate-800 capitalize">
-                  {settings.ocrProvider}
+                <span className="font-medium text-slate-800">
+                  Tesseract.js WASM (Local)
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">AI Provider:</span>
-                <span className="font-medium text-slate-800 capitalize">
-                  {settings.aiProvider}
+                <span className="text-slate-500">Field Extractor:</span>
+                <span className="font-medium text-slate-800">
+                  100% Offline (Free)
                 </span>
               </div>
             </div>

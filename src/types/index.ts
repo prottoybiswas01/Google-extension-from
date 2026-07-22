@@ -1,20 +1,13 @@
 /**
  * Supported AI Providers for form processing
  */
-export type AIProvider = 'local_python' | 'openai' | 'gemini' | 'claude';
+export type AIProvider = 'local_browser';
+export type OCRProvider = 'tesseract_wasm';
 
-/**
- * Supported OCR Engine Providers
- */
-export type OCRProvider = 'tesseract' | 'google_cloud' | 'custom_api';
-
-/**
- * Extension Settings Configuration Interface
- */
 export interface ExtensionSettings {
-  aiProvider: AIProvider;
-  ocrProvider: OCRProvider;
-  apiKey: string;
+  aiProvider?: AIProvider;
+  ocrProvider?: OCRProvider;
+  apiKey?: string;
   encryptedApiKey?: string;
   theme?: ThemeMode;
 }

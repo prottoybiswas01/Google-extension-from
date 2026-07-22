@@ -1,8 +1,8 @@
 import { ExtensionSettings } from '../types';
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  aiProvider: 'local_python',
-  ocrProvider: 'tesseract',
+  aiProvider: 'local_browser',
+  ocrProvider: 'tesseract_wasm',
   apiKey: '',
 };
 

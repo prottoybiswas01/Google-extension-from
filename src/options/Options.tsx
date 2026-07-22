@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Header } from '../components/Header';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Select, SelectOption } from '../components/ui/Select';
 import { StatChart } from '../components/dashboard/StatChart';
 import { HistoryTable } from '../components/dashboard/HistoryTable';
 import { useExtensionSettings } from '../hooks/useExtensionSettings';
@@ -11,13 +9,10 @@ import { storageRepository } from '../services/storage/StorageRepository';
 import { dashboardService } from '../services/dashboard/DashboardService';
 import { statisticsService } from '../services/statistics/StatisticsService';
 import { templateEngine } from '../services/templates/TemplateEngine';
-import { cryptoService } from '../services/security/CryptoService';
 import {
   FormHistoryRecord,
   DashboardMetrics,
   UsageStatistics,
-  AIProvider,
-  OCRProvider,
   ExtensionBackupData,
   InstitutionTemplate,
 } from '../types';
@@ -26,7 +21,6 @@ import {
   History,
   BarChart3,
   Settings as SettingsIcon,
-  Save,
   Key,
   Cpu,
   CheckCircle2,
@@ -41,25 +35,9 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
-const aiProviderOptions: SelectOption[] = [
-  { value: 'local_python', label: 'Local Python Engine (Free & Offline)', description: 'No API Key required. Runs on http://127.0.0.1:5000' },
-  { value: 'gemini', label: 'Google Gemini', description: 'Fast Vision & Multimodal' },
-  { value: 'openai', label: 'OpenAI GPT-4o', description: 'High Precision OCR & Parsing' },
-  { value: 'claude', label: 'Anthropic Claude 3.5 Sonnet', description: 'Advanced Document Analysis' },
-];
-
-const ocrProviderOptions: SelectOption[] = [
-  { value: 'tesseract', label: 'Tesseract.js (Local)', description: 'Client-side offline processing' },
-  { value: 'google_cloud', label: 'Google Cloud Vision API', description: 'Cloud OCR Service' },
-  { value: 'custom_api', label: 'Custom API Endpoint', description: 'Self-hosted OCR Service' },
-];
-
 export const Options: React.FC = () => {
   const {
-    settings,
     isLoading,
-    isSaving,
-    updateSettings,
     resetSettings,
   } = useExtensionSettings();
 
@@ -69,10 +47,6 @@ export const Options: React.FC = () => {
   const [stats, setStats] = useState<UsageStatistics | null>(null);
   const [templates, setTemplates] = useState<InstitutionTemplate[]>([]);
 
-  const [aiProvider, setAiProvider] = useState<AIProvider>(settings.aiProvider);
-  const [ocrProvider, setOcrProvider] = useState<OCRProvider>(settings.ocrProvider);
-  const [apiKey, setApiKey] = useState<string>(settings.apiKey);
-  const [formSaved, setFormSaved] = useState<boolean>(false);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,26 +70,6 @@ export const Options: React.FC = () => {
   useEffect(() => {
     void loadData();
   }, []);
-
-  useEffect(() => {
-    setAiProvider(settings.aiProvider);
-    setOcrProvider(settings.ocrProvider);
-    if (settings.apiKey) {
-      setApiKey(cryptoService.decryptApiKey(settings.apiKey));
-    }
-  }, [settings]);
-
-  const handleSettingsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const encryptedKey = cryptoService.encryptApiKey(apiKey);
-    const newSettings = { aiProvider, ocrProvider, apiKey, encryptedApiKey: encryptedKey };
-    const success = await updateSettings(newSettings);
-    if (success) {
-      await storageRepository.saveSettingsDB(newSettings);
-      setFormSaved(true);
-      setTimeout(() => setFormSaved(false), 3000);
-    }
-  };
 
   const handleBackupExport = async () => {
     const backupData = await storageRepository.exportBackup();
@@ -457,48 +411,22 @@ export const Options: React.FC = () => {
         {/* TAB 5: SETTINGS & BACKUP */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <form onSubmit={handleSettingsSubmit}>
-              <Card variant="default" className="p-6 space-y-6">
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-brand-600" />
-                  Engine Settings
-                </h2>
+            <Card variant="default" className="p-6 space-y-4">
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-brand-600" />
+                Local Engine Status
+              </h2>
 
-                <Select
-                  label="AI Provider"
-                  options={aiProviderOptions}
-                  value={aiProvider}
-                  onChange={(e) => setAiProvider(e.target.value as AIProvider)}
-                />
-
-                <Select
-                  label="OCR Provider"
-                  options={ocrProviderOptions}
-                  value={ocrProvider}
-                  onChange={(e) => setOcrProvider(e.target.value as OCRProvider)}
-                />
-
-                <Input
-                  label="API Key (Encrypted)"
-                  isPassword={true}
-                  placeholder="Enter Provider API key..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  helperText="Your API Key is encrypted using CryptoService before persistence."
-                />
-
-                <div className="flex justify-end pt-2">
-                  {formSaved && (
-                    <span className="text-xs text-emerald-600 font-medium mr-3 flex items-center gap-1">
-                      <CheckCircle2 className="w-4 h-4" /> Settings Saved!
-                    </span>
-                  )}
-                  <Button type="submit" variant="primary" isLoading={isSaving} leftIcon={<Save className="w-4 h-4" />}>
-                    Save Settings
-                  </Button>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  100% Offline Client-Side Browser Engine Active
                 </div>
-              </Card>
-            </form>
+                <p className="text-xs text-emerald-700 leading-relaxed">
+                  Your extension uses WebAssembly Tesseract.js OCR and local field detection directly inside Chrome. No API keys, cloud servers, or external Python background tasks are required!
+                </p>
+              </div>
+            </Card>
 
             <Card variant="default" className="p-6 space-y-4">
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">

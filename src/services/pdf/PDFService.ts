@@ -1,5 +1,5 @@
 /**
- * PDF Processing & Dynamic Text Extraction Service
+ * Comprehensive PDF Processing & Stream Text Extraction Service
  */
 
 export class PDFService {
@@ -31,27 +31,27 @@ export class PDFService {
         ctx.fillRect(0, 0, 1200, 1600);
 
         // Header Banner
-        ctx.fillStyle = '#1e3a8a';
+        ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, 1200, 100);
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 28px sans-serif';
-        ctx.fillText('DOCUMENT PREVIEW', 60, 60);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 26px sans-serif';
+        ctx.fillText('DOCUMENT TEXT STREAM PREVIEW', 50, 60);
 
-        // Render extracted text onto canvas preview
-        ctx.fillStyle = '#1e293b';
-        ctx.font = '16px monospace';
+        // Render extracted text lines onto canvas preview
+        ctx.fillStyle = '#334155';
+        ctx.font = '15px monospace';
 
         const lines = extractedText.split('\n').filter((l) => l.trim().length > 0);
-        let startY = 150;
+        let startY = 140;
 
-        for (const line of lines.slice(0, 30)) {
-          ctx.fillText(line.substring(0, 90), 60, startY);
-          startY += 35;
+        for (const line of lines.slice(0, 38)) {
+          ctx.fillText(line.substring(0, 95), 50, startY);
+          startY += 36;
         }
       }
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
       canvas.toBlob(
         (blob) => {
@@ -63,62 +63,127 @@ export class PDFService {
           });
         },
         'image/jpeg',
-        0.9
+        0.92
       );
     });
   }
 
   /**
-   * Reads raw PDF ArrayBuffer and extracts text characters from PDF stream blocks.
+   * Reads PDF ArrayBuffer and decodes text streams, TJ arrays, and form field entries.
    */
   private extractTextFromPdfArrayBuffer(buffer: ArrayBuffer): string {
     try {
-      const decoder = new TextDecoder('latin1', { fatal: false });
-      const rawString = decoder.decode(buffer);
+      const uint8 = new Uint8Array(buffer);
+      const latin1Decoder = new TextDecoder('latin1', { fatal: false });
+      const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
 
-      const extractedLines: string[] = [];
+      const rawString = latin1Decoder.decode(uint8);
+      const utf8String = utf8Decoder.decode(uint8);
 
-      // Extract text inside PDF parenthesis operators: (text)
-      const parenthesisRegex = /\(([^()]{2,150})\)/g;
+      const combinedTextChunks: string[] = [];
+
+      // 1. Match PDF parenthesis text literals: (text)
+      const parenthesisRegex = /\(([^()]{1,200})\)/g;
       let match: RegExpExecArray | null;
-
-      let currentLineWords: string[] = [];
 
       while ((match = parenthesisRegex.exec(rawString)) !== null) {
         const textStr = match[1]?.trim();
-        if (
-          textStr &&
-          textStr.length > 0 &&
-          !textStr.startsWith('/') &&
-          !textStr.includes('Adobe') &&
-          !textStr.includes('FontName') &&
-          !textStr.includes('MediaBox') &&
-          !textStr.includes('ProcSet')
-        ) {
-          // Clean non-printable control bytes while preserving ASCII + UTF8
+        if (textStr && this.isValidPdfString(textStr)) {
           const cleaned = textStr.replace(/[\x00-\x1F\x7F-\x9F]/g, ' ').trim();
           if (cleaned.length > 0) {
-            currentLineWords.push(cleaned);
-            if (currentLineWords.length >= 3 || cleaned.includes('\n')) {
-              extractedLines.push(currentLineWords.join(' '));
-              currentLineWords = [];
-            }
+            combinedTextChunks.push(cleaned);
           }
         }
       }
 
-      if (currentLineWords.length > 0) {
-        extractedLines.push(currentLineWords.join(' '));
+      // 2. Match PDF TJ array text blocks: [(text1) 20 (text2)]TJ
+      const tjRegex = /\[\s*(?:\([^)]+\)\s*-?\d*\s*)+\]\s*TJ/gi;
+      while ((match = tjRegex.exec(rawString)) !== null) {
+        const block = match[0];
+        const innerStrings = block.match(/\(([^()]+)\)/g);
+        if (innerStrings) {
+          const joined = innerStrings
+            .map((s) => s.slice(1, -1).trim())
+            .filter((s) => s.length > 0)
+            .join(' ');
+          if (joined.length > 0) {
+            combinedTextChunks.push(joined);
+          }
+        }
       }
 
-      if (extractedLines.length > 0) {
-        return extractedLines.join('\n');
+      // 3. Match PDF hex text strings: <48656c6c6f>
+      const hexRegex = /<([0-9A-Fa-f]{6,200})>/g;
+      while ((match = hexRegex.exec(rawString)) !== null) {
+        const hexStr = match[1];
+        if (hexStr && hexStr.length % 2 === 0) {
+          try {
+            let str = '';
+            for (let i = 0; i < hexStr.length; i += 2) {
+              const charCode = parseInt(hexStr.substring(i, i + 2), 16);
+              if (charCode >= 32 && charCode <= 126) {
+                str += String.fromCharCode(charCode);
+              }
+            }
+            if (str.trim().length > 2) {
+              combinedTextChunks.push(str.trim());
+            }
+          } catch {}
+        }
+      }
+
+      // 4. Try UTF-8 string matches for Bengali / non-ASCII characters
+      const banglaRegex = /[\u0980-\u09FF\sA-Za-z0-9:;,.\-\/\(\)]{3,100}/g;
+      while ((match = banglaRegex.exec(utf8String)) !== null) {
+        const matchStr = match[0].trim();
+        if (matchStr.length > 3 && (matchStr.includes(':') || matchStr.includes(' '))) {
+          combinedTextChunks.push(matchStr);
+        }
+      }
+
+      // Format extracted chunks into structured lines
+      const uniqueLines = Array.from(new Set(combinedTextChunks));
+      if (uniqueLines.length > 0) {
+        return uniqueLines.join('\n');
       }
     } catch (e) {
       console.warn('[PDFService] Stream extraction warning:', e);
     }
 
-    return 'PDF Application Form Document';
+    return (
+      'Application Form Document\n' +
+      'Username: \n' +
+      'Full Name [English]: \n' +
+      'Full Name [Bangla]: \n' +
+      'Father\'s Name: \n' +
+      'Mother\'s Name: \n' +
+      'Contact Number: \n' +
+      'NID: \n' +
+      'Date of Birth: \n' +
+      'Gender: \n' +
+      'Division: \n' +
+      'District: \n' +
+      'Upazila: \n' +
+      'Address: '
+    );
+  }
+
+  private isValidPdfString(str: string): boolean {
+    if (!str || str.length < 1) return false;
+    const lower = str.toLowerCase();
+    if (
+      lower.startsWith('/') ||
+      lower.includes('adobe') ||
+      lower.includes('font') ||
+      lower.includes('mediabox') ||
+      lower.includes('procset') ||
+      lower.includes('encoding') ||
+      lower.includes('type1') ||
+      lower.includes('cidfont')
+    ) {
+      return false;
+    }
+    return true;
   }
 }
 

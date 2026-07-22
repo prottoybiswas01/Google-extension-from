@@ -54,19 +54,19 @@ export class FormExtractionPipeline {
       onProgress({
         step: 'ocr',
         progressPercent: 35,
-        statusMessage: `Stage 3/7: Running OCR text recognition (${settings.ocrProvider})...`,
+        statusMessage: 'Stage 3/7: Running local client-side WASM OCR text recognition...',
       });
 
       let rawOcrText = await ocrService.extractText(
-        settings.ocrProvider,
+        'tesseract_wasm',
         compressionResult.compressedBlob,
-        settings.apiKey,
+        '',
         (ocrProgressPercent) => {
           const scaledPercent = Math.min(35 + Math.round(ocrProgressPercent * 0.25), 60);
           onProgress({
             step: 'ocr',
             progressPercent: scaledPercent,
-            statusMessage: `Stage 3/7: Recognizing OCR text (${ocrProgressPercent}%)...`,
+            statusMessage: `Stage 3/7: Recognizing document text (${ocrProgressPercent}%)...`,
           });
         }
       );
@@ -101,12 +101,12 @@ export class FormExtractionPipeline {
       const detectionResult = fieldDetector.detectFields(cleanedText);
 
       // ----------------------------------------------------
-      // Stage 6: AI Validation & Ambiguity Resolution
+      // Stage 6: Field Extraction & Sanitization
       // ----------------------------------------------------
       onProgress({
         step: 'ai_validation',
         progressPercent: 90,
-        statusMessage: `Stage 6/7: AI validating fields (${settings.aiProvider})...`,
+        statusMessage: 'Stage 6/7: Extracting form fields locally in browser...',
         extractedText: rawOcrText,
         cleanedText,
         detectedFields: detectionResult.detectedFields,
@@ -121,9 +121,9 @@ ${JSON.stringify(detectionResult.detectedFields, null, 2)}
 `.trim();
 
       const structuredResult = await aiService.extractStructuredData(
-        settings.aiProvider,
+        settings.aiProvider || 'local_browser',
         promptContextText,
-        settings.apiKey,
+        settings.apiKey || '',
         compressionResult.dataUrl
       );
 

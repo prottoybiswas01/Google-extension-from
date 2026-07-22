@@ -1,95 +1,81 @@
-import { AIProvider, ExtractedFormData } from '../../types';
-import { IAIProvider } from './types';
-import { GeminiProvider, sanitizeExtractedFormData } from './GeminiProvider';
-import { OpenAIProvider } from './OpenAIProvider';
-import { localPythonProvider } from './LocalPythonProvider';
+import { ExtractedFormData } from '../../types';
 import { fieldDetector } from '../fieldDetector';
 
+export function sanitizeExtractedFormData(parsed: Record<string, unknown>): ExtractedFormData {
+  const getStr = (val: unknown): string | null => {
+    if (val === null || val === undefined) return null;
+    const str = String(val).trim();
+    if (!str || str.toLowerCase() === 'null' || str.toLowerCase() === 'n/a' || str.toLowerCase() === 'undefined') {
+      return null;
+    }
+    return str;
+  };
+
+  return {
+    student_name: getStr(parsed.student_name),
+    father_name: getStr(parsed.father_name),
+    mother_name: getStr(parsed.mother_name),
+    phone: getStr(parsed.phone),
+    email: getStr(parsed.email),
+    date_of_birth: getStr(parsed.date_of_birth),
+    gender: getStr(parsed.gender),
+    nid: getStr(parsed.nid),
+    present_address: getStr(parsed.present_address),
+    permanent_address: getStr(parsed.permanent_address),
+    course: getStr(parsed.course),
+    trade: getStr(parsed.trade),
+    education: getStr(parsed.education),
+    blood_group: getStr(parsed.blood_group),
+    religion: getStr(parsed.religion),
+    nationality: getStr(parsed.nationality),
+    remarks: getStr(parsed.remarks),
+
+    username: getStr(parsed.username),
+    name_bangla: getStr(parsed.name_bangla),
+    emergency_contact: getStr(parsed.emergency_contact),
+    password: getStr(parsed.password),
+    father_occupation: getStr(parsed.father_occupation),
+    mother_occupation: getStr(parsed.mother_occupation),
+    pwd: getStr(parsed.pwd),
+    marital_status: getStr(parsed.marital_status),
+    permanent_division: getStr(parsed.permanent_division),
+    permanent_district: getStr(parsed.permanent_district),
+    permanent_upazila: getStr(parsed.permanent_upazila),
+    permanent_post_office: getStr(parsed.permanent_post_office),
+    rural_urban: getStr(parsed.rural_urban),
+    present_division: getStr(parsed.present_division),
+    present_district: getStr(parsed.present_district),
+    present_upazila: getStr(parsed.present_upazila),
+    present_post_office: getStr(parsed.present_post_office),
+    board_university: getStr(parsed.board_university),
+    institute_name: getStr(parsed.institute_name),
+    passing_year: getStr(parsed.passing_year),
+    tvet_certificate: getStr(parsed.tvet_certificate),
+    ethnic_minority: getStr(parsed.ethnic_minority),
+    company_name: getStr(parsed.company_name),
+    designation: getStr(parsed.designation),
+    skill_training_past: getStr(parsed.skill_training_past),
+    employment_status: getStr(parsed.employment_status),
+    monthly_income: getStr(parsed.monthly_income),
+  };
+}
+
 export class AIService {
-  private providers: Record<string, IAIProvider>;
-
-  constructor() {
-    this.providers = {
-      local_python: localPythonProvider,
-      gemini: new GeminiProvider(),
-      openai: new OpenAIProvider(),
-      claude: new GeminiProvider(),
-    };
-  }
-
   /**
-   * Processes OCR text and optional image using the selected AI Provider.
-   * If local_python is selected or no API key is provided, uses local free extraction engines.
+   * Performs 100% local client-side field extraction directly inside the browser extension.
    */
   async extractStructuredData(
-    providerType: AIProvider,
+    _providerType: string,
     ocrText: string,
-    apiKey: string,
-    imageDataUrl?: string
+    _apiKey: string,
+    _imageDataUrl?: string
   ): Promise<ExtractedFormData> {
-    // If provider is local_python, execute local python provider directly
-    if (providerType === 'local_python' || !providerType) {
-      console.log('[AIService] Executing extraction via Local Python Engine.');
-      try {
-        return await localPythonProvider.extractData(ocrText, '', imageDataUrl);
-      } catch (localPyErr) {
-        console.warn('[AIService] Local Python Engine error. Falling back to built-in offline field detector:', localPyErr);
-        return this.offlineAiExtraction(ocrText);
-      }
-    }
+    console.log('[AIService] Running 100% local browser field extraction engine.');
 
-    const selectedProvider = this.providers[providerType];
-    const defaultProvider = localPythonProvider;
-    const provider = selectedProvider || defaultProvider;
-
-    if (!provider) {
-      throw new Error('AI Provider initialization failed.');
-    }
-
-    // If API Key is provided for cloud provider, execute cloud provider request
-    if (apiKey && apiKey.trim().length > 0) {
-      console.log(`[AIService] Executing extraction via ${provider.name} with API Key.`);
-      try {
-        return await provider.extractData(ocrText, apiKey, imageDataUrl);
-      } catch (cloudError) {
-        console.warn(`[AIService] Cloud provider (${provider.name}) error. Falling back to local offline AI parser:`, cloudError);
-      }
-    }
-
-    // Fallback Local Offline AI Extractor
-    console.log('[AIService] Using local offline AI extractor (No API Key required).');
-    return this.offlineAiExtraction(ocrText);
-  }
-
-  /**
-   * Dynamic Local Offline AI Extractor
-   * Maps fields strictly from detected OCR text rules. Unknown or unreadable fields return null.
-   */
-  private offlineAiExtraction(ocrText: string): ExtractedFormData {
     const detected = fieldDetector.detectFields(ocrText);
     const d = detected.detectedFields;
 
-    const dynamicData: Record<string, unknown> = {
-      student_name: d.student_name || null,
-      father_name: d.father_name || null,
-      mother_name: d.mother_name || null,
-      phone: d.phone || null,
-      email: d.email || null,
-      date_of_birth: d.date_of_birth || null,
-      gender: d.gender || null,
-      nid: d.nid || null,
-      present_address: d.present_address || null,
-      permanent_address: d.permanent_address || null,
-      course: d.course || null,
-      trade: d.trade || null,
-      education: d.education || null,
-      blood_group: d.blood_group || null,
-      religion: d.religion || null,
-      nationality: d.nationality || null,
-      remarks: d.remarks || null,
-    };
-
-    return sanitizeExtractedFormData(dynamicData);
+    return sanitizeExtractedFormData(d as Record<string, unknown>);
   }
 }
 
